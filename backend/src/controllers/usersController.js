@@ -19,9 +19,11 @@ export const signup = async (req, res) => {
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: expiry,
     });
+
     res.status(200).json({ user: { id: user._id, email: user.email }, token });
   } catch (error) {
     console.log("Error in signup controller:", error);
+
     res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -42,12 +44,25 @@ export const login = async (req, res) => {
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: expiry,
     });
+
     res.status(200).json({ user: { id: user._id, email: user.email }, token });
   } catch (error) {
     console.log("Error in login controller:", error);
+
     res.status(500).json({ message: "Internal server error" });
   }
 };
 
 //Get the profile
 //Note: /api/users/profile
+export const getProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user).select(" -password");
+    if (!user) return res.stats(404).json({ message: "User not found" });
+    res.status(200).json({ user });
+  } catch (error) {
+    console.log("Error on getting user profile:", error);
+
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
