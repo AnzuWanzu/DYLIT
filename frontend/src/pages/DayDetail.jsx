@@ -5,12 +5,40 @@ import { formatDate } from "../lib/utils";
 import { Link } from "react-router-dom";
 import { ArrowLeftIcon, PlusIcon, TimerIcon } from "lucide-react";
 import { Trash2Icon, PencilIcon } from "lucide-react";
+import toast from "react-hot-toast";
 
 const DayDetail = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [day, setDay] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [editIdx, setEditIdx] = useState(null);
   const [editTitle, setEditTitle] = useState("");
   const [editDesc, setEditDesc] = useState("");
   const [editHours, setEditHours] = useState("");
+  const [showAddTask, setShowAddTask] = useState(false);
+  const [taskTitle, setTaskTitle] = useState("");
+  const [taskDesc, setTaskDesc] = useState("");
+  const [taskHours, setTaskHours] = useState("");
+  const [addLoading, setAddLoading] = useState(false);
+  const [updateLoading, setUpdateLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  const fetchDay = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+      const res = await api.get(`/days/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setDay(res.data);
+    } catch (error) {
+      console.error("Fetch day error:", error);
+      toast.error("Failed to load day details");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleEditTask = (idx) => {
     setEditIdx(idx);
@@ -20,13 +48,25 @@ const DayDetail = () => {
   };
 
   const handleUpdateTask = async (idx) => {
-    if (!editTitle.trim()) return;
-    if (!editDesc.trim()) return;
-    if (!editHours || isNaN(editHours) || Number(editHours) <= 0) return;
+    if (!editTitle.trim()) {
+      toast.error("Task title required");
+      return;
+    }
+    if (!editDesc.trim()) {
+      toast.error("Task description required");
+      return;
+    }
+    if (!editHours || isNaN(editHours) || Number(editHours) <= 0) {
+      toast.error("Valid hours worked required");
+      return;
+    }
+    if (updateLoading) return;
+
+    setUpdateLoading(true);
     try {
       const token = localStorage.getItem("token");
       await api.put(
-        `/days/${id}/tasks/${day.tasks[idx]._id}`,
+        `/tasks/${day.tasks[idx]._id}`,
         {
           title: editTitle,
           description: editDesc,
@@ -38,50 +78,65 @@ const DayDetail = () => {
       setEditTitle("");
       setEditDesc("");
       setEditHours("");
-      // Optionally, refetch day/tasks here
+      toast.success("Task updated successfully!");
+      await fetchDay();
     } catch (error) {
-      // handle error
+      console.error("Update task error:", error);
+      toast.error("Failed to update task");
+    } finally {
+      setUpdateLoading(false);
     }
   };
 
   const handleDeleteTask = async (idx) => {
+    if (deleteLoading) return;
+
+    setDeleteLoading(true);
     try {
       const token = localStorage.getItem("token");
-      await api.delete(`/days/${id}/tasks/${day.tasks[idx]._id}`, {
+      await api.delete(`/tasks/${day.tasks[idx]._id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      toast.success("Task deleted successfully!");
+      // Refetch day data to update UI
+      await fetchDay();
     } catch (error) {
-      // handle error
+      console.error("Delete task error:", error);
+      toast.error("Failed to delete task");
+    } finally {
+      setDeleteLoading(false);
     }
   };
-  const [showAddTask, setShowAddTask] = useState(false);
-  const [taskTitle, setTaskTitle] = useState("");
-  const [taskDesc, setTaskDesc] = useState("");
-  const [taskHours, setTaskHours] = useState("");
-  const [addLoading, setAddLoading] = useState(false);
+
+  useEffect(() => {
+    fetchDay();
+  }, [id]);
 
   const handleAddTask = async () => {
     if (!taskTitle.trim()) {
-      // toast.error("Task title required");
+      toast.error("Task title required");
       return;
     }
     if (!taskDesc.trim()) {
-      // toast.error("Task description required");
+      toast.error("Task description required");
       return;
     }
     if (!taskHours.trim() || isNaN(taskHours) || Number(taskHours) <= 0) {
-      // toast.error("Valid hours worked required");
+      toast.error("Valid hours worked required");
       return;
     }
+    if (addLoading) return;
+
     setAddLoading(true);
     try {
       const token = localStorage.getItem("token");
       await api.post(
-        `/days/${id}/tasks`,
+        `/tasks`,
         {
           title: taskTitle,
           description: taskDesc,
           hours: Number(taskHours),
+          dayId: id,
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -89,33 +144,15 @@ const DayDetail = () => {
       setTaskDesc("");
       setTaskHours("");
       setShowAddTask(false);
+      toast.success("Task added successfully!");
+      await fetchDay();
     } catch (error) {
-      // toast.error("Failed to add task");
+      console.error("Add task error:", error);
+      toast.error("Failed to add task");
     } finally {
       setAddLoading(false);
     }
   };
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const [day, setDay] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchDay = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await api.get(`/days/${id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setDay(res.data);
-      } catch (error) {
-        // handle error (e.g., toast)
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchDay();
-  }, [id]);
 
   if (loading) return <div className="text-center mt-10">Loading...</div>;
   if (!day) return <div className="text-center mt-10">Day not found.</div>;
@@ -157,7 +194,7 @@ const DayDetail = () => {
         <div className="flex justify-between">
           <span className="font-semibold font-mono">Hours Focused:</span>
           <span className="font-bold text-accent font-mono">
-            {day.hoursFocused || "0hrs 00 mins"}
+            {day.totalHours || 0} hours
           </span>
         </div>
       </div>
@@ -263,10 +300,6 @@ const DayDetail = () => {
         >
           <PlusIcon className="size-4" />
           Add Task
-        </button>
-        <button className="btn btn-error btn-sm flex items-center gap-2">
-          <Trash2Icon className="size-4" />
-          Delete Tasks
         </button>
       </div>
       {showAddTask && (
