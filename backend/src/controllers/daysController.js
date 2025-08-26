@@ -23,7 +23,24 @@ export const createDay = async (req, res) => {
 };
 
 //get list of Days from the logged in user
-
+export const getDays = async (req, res) => {
+  try {
+    const days = await Day.find({ user: req.user }).sort({ date: -1 });
+    res.json(days);
+  } catch (error) {
+    console.log("Error getting list of days by logged in user:", error);
+    res.status(500).json({ message: "Failed to fetch days" });
+  }
+};
 //get a single day by ID
-
+export const getDay = async (req, res) => {
+  try {
+    const day = await Day.findOne({ _id: req.params.id, user: req.user });
+    if (!day) return res.status(404).json({ message: "Day not found" });
+    res.json(day);
+  } catch (error) {
+    console.log("Error getting day by logged in user:", error);
+    res.status(500).json({ message: "Failed to fetch day" });
+  }
+};
 //delete a day

@@ -57,7 +57,9 @@ export const login = async (req, res) => {
 //Note: /api/users/profile
 export const getProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user).select(" -password");
+    const user = await User.findById(req.user)
+      .select(" -password")
+      .sort({ date: -1 });
     if (!user) return res.stats(404).json({ message: "User not found" });
     res.status(200).json({ user });
   } catch (error) {
