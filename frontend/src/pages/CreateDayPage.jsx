@@ -123,7 +123,7 @@ const CreateDayPage = () => {
             style={{ maxWidth: "fit-content" }}
           >
             <ArrowLeftIcon className="size-5" />
-            Back to Days
+            Back to Home
           </Link>
           <div className="card bg-gradient-to-br from-base-100 via-base-200 to-accent/10 border-l-4 border-accent shadow-2xl rounded-xl">
             <div className="card-body">

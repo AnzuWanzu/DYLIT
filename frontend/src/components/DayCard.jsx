@@ -20,7 +20,7 @@ const DayCard = ({ day }) => {
         <div className="flex items-center justify-between mb-2">
           <span className="text-lg font-bold text-primary">Date:</span>
           <span className="text-lg font-extrabold text-accent">
-            {formatDate(day.date)} (Today)
+            {formatDate(day.date)}
           </span>
         </div>
         <div className="flex items-center justify-between mb-2">
