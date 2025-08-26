@@ -11,6 +11,14 @@ import {
 import toast from "react-hot-toast";
 import api from "../lib/api";
 import { formatDate } from "../lib/utils";
+import {
+  validateTaskInput,
+  checkDailyHoursLimit,
+  getDailyHoursProgress,
+  formatHours,
+  MAX_DAILY_HOURS,
+  calculateTotalHours,
+} from "../lib/validator";
 
 const CreateDayPage = () => {
   const [date, setDate] = useState(() => {
@@ -34,24 +42,32 @@ const CreateDayPage = () => {
   };
 
   const handleUpdateTask = (idx) => {
-    if (!editTitle.trim()) {
-      toast.error("Task title required");
+    const validation = validateTaskInput(editTitle, editDesc, editHours);
+    if (!validation.isValid) {
+      validation.errors.forEach((error) => toast.error(error));
       return;
     }
-    if (!editDesc.trim()) {
-      toast.error("Task description required");
+
+    const hoursCheck = checkDailyHoursLimit(tasks, editHours, tasks[idx].title);
+    if (!hoursCheck.isValid) {
+      toast.error(
+        `Cannot update to ${formatHours(
+          editHours
+        )} hours. Total would be ${formatHours(
+          hoursCheck.newTotal
+        )} hours, exceeding ${MAX_DAILY_HOURS}-hour limit. You have ${formatHours(
+          hoursCheck.remainingHours
+        )} hours remaining.`
+      );
       return;
     }
-    if (!editHours || isNaN(editHours) || Number(editHours) <= 0) {
-      toast.error("Valid hours worked required");
-      return;
-    }
+
     const updatedTasks = tasks.map((task, i) =>
       i === idx
         ? {
             ...task,
-            title: editTitle,
-            description: editDesc,
+            title: editTitle.trim(),
+            description: editDesc.trim(),
             hours: Number(editHours),
           }
         : task
@@ -65,23 +81,31 @@ const CreateDayPage = () => {
   const navigate = useNavigate();
 
   const handleAddTask = () => {
-    if (!taskTitle.trim()) {
-      toast.error("Task title required");
+    const validation = validateTaskInput(taskTitle, taskDesc, taskHours);
+    if (!validation.isValid) {
+      validation.errors.forEach((error) => toast.error(error));
       return;
     }
-    if (!taskDesc.trim()) {
-      toast.error("Task description required");
+
+    const hoursCheck = checkDailyHoursLimit(tasks, taskHours);
+    if (!hoursCheck.isValid) {
+      toast.error(
+        `Cannot add ${formatHours(
+          taskHours
+        )} hours. Total would be ${formatHours(
+          hoursCheck.newTotal
+        )} hours, exceeding ${MAX_DAILY_HOURS}-hour limit. You have ${formatHours(
+          hoursCheck.remainingHours
+        )} hours remaining.`
+      );
       return;
     }
-    if (!taskHours.trim() || isNaN(taskHours) || Number(taskHours) <= 0) {
-      toast.error("Valid hours worked required");
-      return;
-    }
+
     setTasks([
       ...tasks,
       {
-        title: taskTitle,
-        description: taskDesc,
+        title: taskTitle.trim(),
+        description: taskDesc.trim(),
         hours: Number(taskHours),
       },
     ]);
@@ -100,7 +124,6 @@ const CreateDayPage = () => {
     try {
       const token = localStorage.getItem("token");
 
-      // Step 1: Create the day first
       const dayResponse = await api.post(
         "/days",
         { date },
@@ -109,7 +132,6 @@ const CreateDayPage = () => {
 
       const createdDay = dayResponse.data;
 
-      // Step 2: Create tasks individually using the Task API
       if (tasks.length > 0) {
         const taskPromises = tasks.map((task) =>
           api.post(
@@ -131,7 +153,17 @@ const CreateDayPage = () => {
       navigate("/");
     } catch (error) {
       console.error("Error creating day:", error);
-      if (error.response?.data?.message) {
+
+      if (error.response?.status === 400) {
+        const data = error.response.data;
+        if (data.errors && Array.isArray(data.errors)) {
+          data.errors.forEach((err) => toast.error(err));
+        } else if (data.message) {
+          toast.error(data.message);
+        } else {
+          toast.error("Validation failed");
+        }
+      } else if (error.response?.data?.message) {
         toast.error(error.response.data.message);
       } else {
         toast.error("Failed to create day");
@@ -172,6 +204,77 @@ const CreateDayPage = () => {
                     Selected: {formatDate(date)}
                   </span>
                 </div>
+
+                {/* Daily Progress Section */}
+                {tasks.length > 0 &&
+                  (() => {
+                    const totalHours = calculateTotalHours(tasks);
+                    const progress = getDailyHoursProgress(totalHours);
+                    return (
+                      <div className="mb-6 p-4 bg-base-100 border border-accent/20 rounded-xl shadow">
+                        <div className="flex flex-col gap-3">
+                          <div className="flex justify-between items-center">
+                            <h3 className="font-bold text-lg flex items-center gap-2">
+                              <TimerIcon className="size-5 text-accent" />
+                              Daily Progress Summary
+                            </h3>
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg font-mono font-bold text-accent">
+                                {formatHours(totalHours)} / {MAX_DAILY_HOURS}{" "}
+                                hours
+                              </span>
+                              <span
+                                className={`badge ${progress.styling.badge} font-mono text-xs`}
+                              >
+                                {progress.statusText}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="w-full">
+                            <progress
+                              className={`progress ${progress.styling.progressColor} w-full h-4`}
+                              value={progress.percentage}
+                              max="100"
+                            ></progress>
+                          </div>
+
+                          <div className="flex justify-between text-sm font-mono">
+                            <span className={progress.styling.color}>
+                              {progress.percentage}% of daily target
+                            </span>
+                            {!progress.isOverLimit && (
+                              <span className="text-base-content/60">
+                                {formatHours(progress.remainingHours)} hours
+                                remaining
+                              </span>
+                            )}
+                            {progress.isOverLimit && (
+                              <span className="text-error font-bold">
+                                ⚠️ Over limit by{" "}
+                                {formatHours(totalHours - MAX_DAILY_HOURS)}{" "}
+                                hours!
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="text-xs text-base-content/70 pt-2 border-t border-base-300">
+                            <span className="font-semibold">
+                              {tasks.length} task{tasks.length !== 1 ? "s" : ""}{" "}
+                              planned
+                            </span>
+                            {progress.percentage > 75 &&
+                              !progress.isOverLimit && (
+                                <span className="ml-2 text-warning">
+                                  • Approaching daily limit
+                                </span>
+                              )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                 <div className="form-control mb-4">
                   <label className="label">
                     <span className="label-text mb-2">Add Task</span>
@@ -317,7 +420,7 @@ const CreateDayPage = () => {
                                 Description: {task.description}
                               </span>
                               <span className="text-accent font-mono">
-                                Hours worked: {task.hours}
+                                Hours worked: {formatHours(task.hours)}
                               </span>
                             </>
                           )}
@@ -326,6 +429,7 @@ const CreateDayPage = () => {
                     </ul>
                   </div>
                 )}
+
                 <div className="card-actions justify-end">
                   <button
                     type="submit"

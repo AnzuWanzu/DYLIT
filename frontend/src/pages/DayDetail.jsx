@@ -57,14 +57,12 @@ const DayDetail = () => {
   };
 
   const handleUpdateTask = async (idx) => {
-    // Validate input using validator
     const validation = validateTaskInput(editTitle, editDesc, editHours);
     if (!validation.isValid) {
       validation.errors.forEach((error) => toast.error(error));
       return;
     }
 
-    // Check daily hours limit
     const hoursCheck = checkDailyHoursLimit(
       day.tasks,
       editHours,
@@ -105,7 +103,6 @@ const DayDetail = () => {
       await fetchDay();
     } catch (error) {
       console.error("Update task error:", error);
-      // Handle validation errors from backend
       if (error.response?.status === 400) {
         const message = error.response.data.message;
         if (error.response.data.errors) {
@@ -145,14 +142,11 @@ const DayDetail = () => {
   }, [id]);
 
   const handleAddTask = async () => {
-    // Validate input using validator
     const validation = validateTaskInput(taskTitle, taskDesc, taskHours);
     if (!validation.isValid) {
       validation.errors.forEach((error) => toast.error(error));
       return;
     }
-
-    // Check daily hours limit
     const hoursCheck = checkDailyHoursLimit(day.tasks, taskHours);
     if (!hoursCheck.isValid) {
       toast.error(
@@ -190,7 +184,6 @@ const DayDetail = () => {
       await fetchDay();
     } catch (error) {
       console.error("Add task error:", error);
-      // Handle validation errors from backend
       if (error.response?.status === 400) {
         const message = error.response.data.message;
         if (error.response.data.errors) {
