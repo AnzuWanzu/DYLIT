@@ -1,7 +1,7 @@
 import { Route, Routes } from "react-router";
-import LoginForm from "./components/LoginForm";
-import SignupForm from "./components/SignupForm";
-import HomePage from "./components/HomePage";
+import LoginForm from "./pages/LoginForm";
+import SignupForm from "./pages/SignupForm";
+import HomePage from "./pages/HomePage";
 
 const App = () => {
   return (
