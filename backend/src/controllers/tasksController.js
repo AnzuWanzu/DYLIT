@@ -1,19 +1,54 @@
 import Task from "../models/Task.js";
 import Day from "../models/Day.js";
+import {
+  validateTaskInput,
+  validateDailyHoursLimit,
+  getHoursLimitErrorMessage,
+} from "../lib/validator.js";
 
 // Create a new task
 export const createTask = async (req, res) => {
   try {
     const { title, description, hours, dayId } = req.body;
+
+    const inputValidation = validateTaskInput(title, description, hours);
+    if (!inputValidation.isValid) {
+      return res.status(400).json({
+        message: "Validation failed",
+        errors: inputValidation.errors,
+      });
+    }
+
     const day = await Day.findOne({ _id: dayId, user: req.user });
     if (!day) {
       return res.status(404).json({ message: "Day not found" });
     }
 
-    const task = new Task({
-      title,
-      description,
+    const hoursValidation = await validateDailyHoursLimit(
       hours,
+      dayId,
+      req.user
+    );
+    if (!hoursValidation.isValid) {
+      const errorMessage =
+        hoursValidation.error ||
+        getHoursLimitErrorMessage(
+          Number(hours),
+          hoursValidation.newTotal,
+          hoursValidation.remainingHours
+        );
+      return res.status(400).json({
+        message: errorMessage,
+        currentTotal: hoursValidation.currentTotal,
+        remainingHours: hoursValidation.remainingHours,
+        maxHours: hoursValidation.maxHours,
+      });
+    }
+
+    const task = new Task({
+      title: title.trim(),
+      description: description.trim(),
+      hours: Number(hours),
       day: dayId,
       user: req.user,
     });
@@ -97,9 +132,54 @@ export const updateTask = async (req, res) => {
       return res.status(404).json({ message: "Task not found" });
     }
 
-    if (title !== undefined) task.title = title;
-    if (description !== undefined) task.description = description;
-    if (hours !== undefined) task.hours = hours;
+    if (
+      title !== undefined ||
+      description !== undefined ||
+      hours !== undefined
+    ) {
+      const inputValidation = validateTaskInput(
+        title !== undefined ? title : task.title,
+        description !== undefined ? description : task.description,
+        hours !== undefined ? hours : task.hours
+      );
+
+      if (!inputValidation.isValid) {
+        return res.status(400).json({
+          message: "Validation failed",
+          errors: inputValidation.errors,
+        });
+      }
+    }
+
+    if (hours !== undefined && Number(hours) !== task.hours) {
+      const hoursValidation = await validateDailyHoursLimit(
+        hours,
+        task.day,
+        req.user,
+        task._id
+      );
+
+      if (!hoursValidation.isValid) {
+        const errorMessage =
+          hoursValidation.error ||
+          getHoursLimitErrorMessage(
+            Number(hours),
+            hoursValidation.newTotal,
+            hoursValidation.remainingHours,
+            true // This is an update
+          );
+        return res.status(400).json({
+          message: errorMessage,
+          currentTotal: hoursValidation.currentTotal,
+          remainingHours: hoursValidation.remainingHours,
+          maxHours: hoursValidation.maxHours,
+        });
+      }
+    }
+
+    if (title !== undefined) task.title = title.trim();
+    if (description !== undefined) task.description = description.trim();
+    if (hours !== undefined) task.hours = Number(hours);
 
     await task.save();
     res.json(task);

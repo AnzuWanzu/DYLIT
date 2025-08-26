@@ -6,6 +6,13 @@ import { Link } from "react-router-dom";
 import { ArrowLeftIcon, PlusIcon, TimerIcon } from "lucide-react";
 import { Trash2Icon, PencilIcon } from "lucide-react";
 import toast from "react-hot-toast";
+import {
+  validateTaskInput,
+  checkDailyHoursLimit,
+  getDailyHoursProgress,
+  formatHours,
+  MAX_DAILY_HOURS,
+} from "../lib/validator";
 
 const DayDetail = () => {
   const { id } = useParams();
@@ -50,18 +57,32 @@ const DayDetail = () => {
   };
 
   const handleUpdateTask = async (idx) => {
-    if (!editTitle.trim()) {
-      toast.error("Task title required");
+    // Validate input using validator
+    const validation = validateTaskInput(editTitle, editDesc, editHours);
+    if (!validation.isValid) {
+      validation.errors.forEach((error) => toast.error(error));
       return;
     }
-    if (!editDesc.trim()) {
-      toast.error("Task description required");
+
+    // Check daily hours limit
+    const hoursCheck = checkDailyHoursLimit(
+      day.tasks,
+      editHours,
+      day.tasks[idx]._id
+    );
+    if (!hoursCheck.isValid) {
+      toast.error(
+        `Cannot update to ${formatHours(
+          editHours
+        )} hours. Total would be ${formatHours(
+          hoursCheck.newTotal
+        )} hours, exceeding ${MAX_DAILY_HOURS}-hour limit. You have ${formatHours(
+          hoursCheck.remainingHours
+        )} hours remaining.`
+      );
       return;
     }
-    if (!editHours || isNaN(editHours) || Number(editHours) <= 0) {
-      toast.error("Valid hours worked required");
-      return;
-    }
+
     if (updateLoading) return;
 
     setUpdateLoading(true);
@@ -70,8 +91,8 @@ const DayDetail = () => {
       await api.put(
         `/tasks/${day.tasks[idx]._id}`,
         {
-          title: editTitle,
-          description: editDesc,
+          title: editTitle.trim(),
+          description: editDesc.trim(),
           hours: Number(editHours),
         },
         { headers: { Authorization: `Bearer ${token}` } }
@@ -84,7 +105,17 @@ const DayDetail = () => {
       await fetchDay();
     } catch (error) {
       console.error("Update task error:", error);
-      toast.error("Failed to update task");
+      // Handle validation errors from backend
+      if (error.response?.status === 400) {
+        const message = error.response.data.message;
+        if (error.response.data.errors) {
+          error.response.data.errors.forEach((err) => toast.error(err));
+        } else {
+          toast.error(message);
+        }
+      } else {
+        toast.error("Failed to update task");
+      }
     } finally {
       setUpdateLoading(false);
     }
@@ -114,18 +145,28 @@ const DayDetail = () => {
   }, [id]);
 
   const handleAddTask = async () => {
-    if (!taskTitle.trim()) {
-      toast.error("Task title required");
+    // Validate input using validator
+    const validation = validateTaskInput(taskTitle, taskDesc, taskHours);
+    if (!validation.isValid) {
+      validation.errors.forEach((error) => toast.error(error));
       return;
     }
-    if (!taskDesc.trim()) {
-      toast.error("Task description required");
+
+    // Check daily hours limit
+    const hoursCheck = checkDailyHoursLimit(day.tasks, taskHours);
+    if (!hoursCheck.isValid) {
+      toast.error(
+        `Cannot add ${formatHours(
+          taskHours
+        )} hours. Total would be ${formatHours(
+          hoursCheck.newTotal
+        )} hours, exceeding ${MAX_DAILY_HOURS}-hour limit. You have ${formatHours(
+          hoursCheck.remainingHours
+        )} hours remaining.`
+      );
       return;
     }
-    if (!taskHours.trim() || isNaN(taskHours) || Number(taskHours) <= 0) {
-      toast.error("Valid hours worked required");
-      return;
-    }
+
     if (addLoading) return;
 
     setAddLoading(true);
@@ -134,8 +175,8 @@ const DayDetail = () => {
       await api.post(
         `/tasks`,
         {
-          title: taskTitle,
-          description: taskDesc,
+          title: taskTitle.trim(),
+          description: taskDesc.trim(),
           hours: Number(taskHours),
           dayId: id,
         },
@@ -149,7 +190,17 @@ const DayDetail = () => {
       await fetchDay();
     } catch (error) {
       console.error("Add task error:", error);
-      toast.error("Failed to add task");
+      // Handle validation errors from backend
+      if (error.response?.status === 400) {
+        const message = error.response.data.message;
+        if (error.response.data.errors) {
+          error.response.data.errors.forEach((err) => toast.error(err));
+        } else {
+          toast.error(message);
+        }
+      } else {
+        toast.error("Failed to add task");
+      }
     } finally {
       setAddLoading(false);
     }
@@ -227,9 +278,48 @@ const DayDetail = () => {
         <div className="flex justify-between">
           <span className="font-semibold font-mono">Hours Focused:</span>
           <span className="font-bold text-accent font-mono">
-            {day.totalHours || 0} hours
+            {formatHours(day.totalHours || 0)} / {MAX_DAILY_HOURS} hours
           </span>
         </div>
+
+        {/* Daily Hours Progress */}
+        {(() => {
+          const progress = getDailyHoursProgress(day.totalHours || 0);
+          return (
+            <div className="flex flex-col gap-2">
+              <div className="flex justify-between items-center">
+                <span className="font-semibold font-mono text-sm">
+                  Daily Progress:
+                </span>
+                <span
+                  className={`badge ${progress.styling.badge} font-mono text-xs`}
+                >
+                  {progress.statusText}
+                </span>
+              </div>
+              <div className="w-full">
+                <progress
+                  className={`progress ${progress.styling.progressColor} w-full h-3`}
+                  value={progress.percentage}
+                  max="100"
+                ></progress>
+              </div>
+              <div className="flex justify-between text-xs font-mono">
+                <span className={progress.styling.color}>
+                  {progress.percentage}% complete
+                </span>
+                {!progress.isOverLimit && (
+                  <span className="text-base-content/60">
+                    {formatHours(progress.remainingHours)} hours remaining
+                  </span>
+                )}
+                {progress.isOverLimit && (
+                  <span className="text-error font-bold">Over limit!</span>
+                )}
+              </div>
+            </div>
+          );
+        })()}
       </div>
       {/* Render Tasks for the Day section outside the summary stats */}
       {day.tasks && day.tasks.length > 0 && (
@@ -317,7 +407,7 @@ const DayDetail = () => {
                       Description: {task.description}
                     </span>
                     <span className="text-accent font-mono">
-                      Hours worked: {task.hours}
+                      Hours worked: {formatHours(task.hours)}
                     </span>
                   </>
                 )}
