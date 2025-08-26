@@ -4,6 +4,7 @@ import daysRoutes from "./routes/daysRoutes.js";
 import tasksRoutes from "./routes/tasksRoutes.js";
 import dotenv from "dotenv";
 import cors from "cors";
+import path from "path";
 
 import { connectDB } from "./config/db.js";
 
@@ -11,6 +12,7 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5002;
+const __dirname = path.resolve();
 
 //Middleware stuff
 app.use(express.json());
@@ -23,6 +25,13 @@ app.use("/api/tasks", tasksRoutes);
 
 //test route
 app.get("/", (req, res) => res.send("Time tracker api is running"));
+
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname, "../frontend/dist")));
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(__dirname, "../frontend", "dist", "index.html"));
+  });
+}
 
 //DB connection
 connectDB().then(() => {
