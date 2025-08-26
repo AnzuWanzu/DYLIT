@@ -3,6 +3,7 @@ import api from "../lib/api";
 import toast from "react-hot-toast";
 import NavBar from "../components/NavBar";
 import DaysNotFound from "../components/DaysNotFound";
+import DayCard from "../components/DayCard";
 import { formatDate } from "../lib/utils";
 
 const HomePage = () => {
@@ -38,15 +39,7 @@ const HomePage = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {days.map((day) => (
-              <div key={day._id} className="card bg-base-100 shadow-lg p-4">
-                <h2 className="text-xl font-semibold mb-2">
-                  {formatDate(day.date)}
-                </h2>
-                {/* place holder for the Task (imma do this later) */}
-                <span className="text-sm text-base-content/70">
-                  Created: {new Date(day.createdAt).toLocaleString()}
-                </span>
-              </div>
+              <DayCard key={day._id} day={day} />
             ))}
           </div>
         )}
