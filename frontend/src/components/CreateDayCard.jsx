@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { formatDate } from "../lib/utils";
 
 const CreateDayCard = ({ day }) => {
@@ -10,7 +11,8 @@ const CreateDayCard = ({ day }) => {
   });
 
   return (
-    <div
+    <Link
+      to={`/day/${day._id}`}
       className="card bg-gradient-to-br from-base-100 via-base-200 to-accent/10 border-l-4 border-accent shadow-xl rounded-xl p-5 transition-all duration-200 hover:scale-[1.03] hover:shadow-2xl"
       style={{ backgroundColor: "#191919" }}
     >
@@ -36,7 +38,7 @@ const CreateDayCard = ({ day }) => {
           <span className="font-bold text-accent">{hoursFocused}</span>
         </div>
       </div>
-    </div>
+    </Link>
   );
 };
 
