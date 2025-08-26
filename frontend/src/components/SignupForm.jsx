@@ -1,7 +1,7 @@
 import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import api from "../lib/api";
 import toast from "react-hot-toast";
-import { Link } from "react-router-dom";
 
 const SignupForm = () => {
   const [email, setEmail] = useState("");
@@ -9,6 +9,7 @@ const SignupForm = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,6 +25,7 @@ const SignupForm = () => {
       if (res.data.token) {
         localStorage.setItem("token", res.data.token);
         toast.success("Signup successful!");
+        navigate("/login");
       } else {
         setErrorMsg(res.data.message || "Signup failed");
         toast.error(res.data.message || "Signup failed");
