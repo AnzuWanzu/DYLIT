@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/482ea14c-2a9c-4e6a-ba7e-840238fe56d7" alt="Logo" width="180" />
+  <img src="https://github.com/user-attachments/assets/a66a9a49-1c01-4d01-ae9c-1dcfd25da71c" alt="Logo" width="180" />
 </p>
 
 <h1 align="center">DLYIT</h1>
