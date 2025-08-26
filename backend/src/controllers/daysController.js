@@ -43,4 +43,18 @@ export const getDay = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch day" });
   }
 };
+
 //delete a day
+export const deleteDay = async (req, res) => {
+  try {
+    const day = await Day.findOneAndDelete({
+      _id: req.params.id,
+      user: req.user,
+    });
+    if (!day) return res.status(404).json({ message: "Day not found" });
+    res.json({ message: "Day deleted" });
+  } catch (error) {
+    console.log("Error deleting a day:", error);
+    res.status(500).json({ message: "Failed to delete day" });
+  }
+};
