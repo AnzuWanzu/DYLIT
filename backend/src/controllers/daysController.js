@@ -4,9 +4,17 @@ import Day from "../models/Day.js";
 export const createDay = async (req, res) => {
   try {
     const { date } = req.body;
+    const existingDay = await Day.findOne({
+      user: req.user,
+      date: new Date(date),
+    });
+    if (existingDay) {
+      return res
+        .status(400)
+        .json({ message: "Day for this date already exists." });
+    }
     const day = new Day({ user: req.user, date });
     await day.save();
-
     res.status(201).json(day);
   } catch (error) {
     console.log("Error creating day function:", error);
