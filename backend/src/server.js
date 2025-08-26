@@ -23,9 +23,6 @@ app.use("/api/users", userRoutes);
 app.use("/api/days", daysRoutes);
 app.use("/api/tasks", tasksRoutes);
 
-//test route
-app.get("/", (req, res) => res.send("Time tracker api is running"));
-
 if (process.env.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "../frontend/dist")));
   app.get("*", (req, res) => {
