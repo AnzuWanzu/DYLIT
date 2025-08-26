@@ -19,7 +19,7 @@ const LoginForm = () => {
       if (res.data.token) {
         localStorage.setItem("token", res.data.token);
         toast.success("Login successful!");
-        navigate("/"); // Redirect to homepage
+        navigate("/");
       } else {
         setErrorMsg(res.data.message || "Login failed");
         toast.error(res.data.message || "Login failed");

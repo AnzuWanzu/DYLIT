@@ -23,6 +23,8 @@ const DayDetail = () => {
   const [addLoading, setAddLoading] = useState(false);
   const [updateLoading, setUpdateLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteDayLoading, setDeleteDayLoading] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const fetchDay = async () => {
     try {
@@ -98,7 +100,6 @@ const DayDetail = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       toast.success("Task deleted successfully!");
-      // Refetch day data to update UI
       await fetchDay();
     } catch (error) {
       console.error("Delete task error:", error);
@@ -154,6 +155,30 @@ const DayDetail = () => {
     }
   };
 
+  const handleDeleteDay = async () => {
+    if (deleteDayLoading) return;
+
+    setDeleteDayLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      await api.delete(`/days/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      toast.success("Day and all tasks deleted successfully!");
+      navigate("/");
+    } catch (error) {
+      console.error("Delete day error:", error);
+      toast.error("Failed to delete day");
+    } finally {
+      setDeleteDayLoading(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
+  const confirmDeleteDay = () => {
+    setShowDeleteConfirm(true);
+  };
+
   if (loading) return <div className="text-center mt-10">Loading...</div>;
   if (!day) return <div className="text-center mt-10">Day not found.</div>;
 
@@ -164,15 +189,23 @@ const DayDetail = () => {
 
   return (
     <div className="max-w-lg mx-auto mt-10 bg-gradient-to-br from-base-100 via-base-200 to-accent/10 border-l-4 border-accent shadow-2xl rounded-xl p-8">
-      <div className="flex justify-start">
+      <div className="flex justify-between items-center mb-6">
         <Link
           to="/"
-          className="btn btn-ghost mb-6 flex items-center gap-2 px-3 py-1 min-w-0 w-auto"
-          style={{ maxWidth: "fit-content" }}
+          className="btn btn-ghost flex items-center gap-2 px-3 py-1"
         >
           <ArrowLeftIcon className="size-5" />
           Back to Home
         </Link>
+
+        <button
+          onClick={confirmDeleteDay}
+          disabled={deleteDayLoading}
+          className="btn btn-error btn-sm flex items-center gap-2"
+        >
+          <Trash2Icon className="size-4" />
+          {deleteDayLoading ? "Deleting..." : "Delete Day"}
+        </button>
       </div>
       <h1 className="text-3xl font-extrabold text-primary mb-6 font-mono tracking-wide">
         {formatDate(day.date)}{" "}
@@ -358,6 +391,56 @@ const DayDetail = () => {
             >
               Cancel
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-base-100 rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-error/20 rounded-full">
+                <Trash2Icon className="w-6 h-6 text-error" />
+              </div>
+              <h3 className="text-lg font-bold text-base-content">
+                Delete Day
+              </h3>
+            </div>
+
+            <p className="text-base-content/80 mb-6">
+              Are you sure you want to delete this day and all its tasks?
+              <span className="block mt-2 text-error font-semibold">
+                This action cannot be undone.
+              </span>
+            </p>
+
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={deleteDayLoading}
+                className="btn btn-ghost"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteDay}
+                disabled={deleteDayLoading}
+                className="btn btn-error"
+              >
+                {deleteDayLoading ? (
+                  <>
+                    <span className="loading loading-spinner loading-sm"></span>
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2Icon className="w-4 h-4" />
+                    Delete Day
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
