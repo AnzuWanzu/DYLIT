@@ -27,7 +27,7 @@ const NavBar = () => {
           <div className="flex items-center gap-4 flex-grow justify-end">
             <Link to={"/create"} className="btn btn-active btn-accent">
               <PlusIcon className="size-5" />
-              <span> New Day</span>
+              <span> Add Day</span>
             </Link>
             <button
               className="btn btn-ghost btn-error text-sm px-2 ml-8"
