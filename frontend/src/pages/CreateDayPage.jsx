@@ -99,15 +99,43 @@ const CreateDayPage = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      await api.post(
+
+      // Step 1: Create the day first
+      const dayResponse = await api.post(
         "/days",
-        { date, tasks },
+        { date },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+
+      const createdDay = dayResponse.data;
+
+      // Step 2: Create tasks individually using the Task API
+      if (tasks.length > 0) {
+        const taskPromises = tasks.map((task) =>
+          api.post(
+            "/tasks",
+            {
+              title: task.title,
+              description: task.description,
+              hours: task.hours,
+              dayId: createdDay._id,
+            },
+            { headers: { Authorization: `Bearer ${token}` } }
+          )
+        );
+
+        await Promise.all(taskPromises);
+      }
+
       toast.success("Day created successfully!");
       navigate("/");
     } catch (error) {
-      toast.error("Failed to create day");
+      console.error("Error creating day:", error);
+      if (error.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error("Failed to create day");
+      }
     } finally {
       setLoading(false);
     }

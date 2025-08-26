@@ -2,8 +2,19 @@ import { Link } from "react-router-dom";
 import { formatDate } from "../lib/utils";
 
 const DayCard = ({ day }) => {
-  const tasksDone = day.tasks ? day.tasks.length : 0;
-  const hoursFocused = day.hoursFocused || "0hrs 00 mins";
+  // Use the new backend fields: taskCount and totalHours
+  const tasksDone = day.taskCount || 0;
+  const totalHours = day.totalHours || 0;
+
+  // Format hours display
+  const formatHours = (hours) => {
+    if (hours === 0) return "0hrs";
+    if (hours % 1 === 0) return `${hours}hrs`;
+    return `${hours}hrs`;
+  };
+
+  const hoursFocused = formatHours(totalHours);
+
   const createdAt = new Date(day.createdAt);
   const createdTime = createdAt.toLocaleTimeString([], {
     hour: "2-digit",
