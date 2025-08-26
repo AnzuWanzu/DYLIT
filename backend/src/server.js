@@ -13,7 +13,7 @@ const PORT = process.env.PORT || 5002;
 app.use(express.json());
 
 //Routes
-app.use("/api/users/", userRoutes);
+app.use("/api/users", userRoutes);
 
 //test route
 app.get("/", (req, res) => res.send("Time tracker api is running"));

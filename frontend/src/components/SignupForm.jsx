@@ -1,15 +1,23 @@
 import { useState } from "react";
 import api from "../lib/api";
 import toast from "react-hot-toast";
-import { Link } from "react-router";
+import { Link } from "react-router-dom";
 
 const SignupForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMsg("");
+    if (password !== confirmPassword) {
+      setErrorMsg("Passwords do not match");
+      toast.error("Passwords do not match");
+      return;
+    }
     setLoading(true);
     try {
       const res = await api.post("/users/signup", { email, password });
@@ -17,9 +25,11 @@ const SignupForm = () => {
         localStorage.setItem("token", res.data.token);
         toast.success("Signup successful!");
       } else {
+        setErrorMsg(res.data.message || "Signup failed");
         toast.error(res.data.message || "Signup failed");
       }
     } catch (error) {
+      setErrorMsg("Signup failed");
       toast.error("Signup failed");
     } finally {
       setLoading(false);
@@ -50,6 +60,14 @@ const SignupForm = () => {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
+            <input
+              type="password"
+              placeholder="Confirm Password"
+              className="input input-bordered w-full"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+            />
             <button
               type="submit"
               className="btn btn-primary w-full"
@@ -57,6 +75,11 @@ const SignupForm = () => {
             >
               {loading ? "Signing up..." : "Sign Up"}
             </button>
+            {errorMsg && (
+              <div className="text-error text-sm text-center mt-2">
+                {errorMsg}
+              </div>
+            )}
           </form>
           <div className="mt-4 text-center">
             <span className="text-sm text-base-content/70">
