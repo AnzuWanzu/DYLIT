@@ -1,5 +1,6 @@
 import express from "express";
 import userRoutes from "./routes/userRoutes.js";
+import daysRoutes from "./routes/daysRoutes.js";
 import dotenv from "dotenv";
 import cors from "cors";
 
@@ -16,6 +17,7 @@ app.use(cors());
 
 //Routes
 app.use("/api/users", userRoutes);
+app.use("/api/days", daysRoutes);
 
 //test route
 app.get("/", (req, res) => res.send("Time tracker api is running"));
