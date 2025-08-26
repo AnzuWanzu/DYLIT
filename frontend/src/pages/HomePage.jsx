@@ -9,7 +9,13 @@ import {
   getSortedGroupKeys,
   getGroupTitle,
 } from "../lib/utils";
-import { ChevronDownIcon, CalendarIcon, Calendar, Clock } from "lucide-react";
+import {
+  ChevronDownIcon,
+  CalendarIcon,
+  Calendar,
+  Clock,
+  Zap,
+} from "lucide-react";
 
 const HomePage = () => {
   const [days, setDays] = useState([]);
@@ -50,6 +56,8 @@ const HomePage = () => {
 
   const getSortIcon = () => {
     switch (sortBy) {
+      case "latest":
+        return <Zap className="w-4 h-4" />;
       case "week":
         return <Calendar className="w-4 h-4" />;
       case "month":
@@ -67,7 +75,13 @@ const HomePage = () => {
       <NavBar />
       <div className="p-6">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-primary">Your Days</h1>
+          <div className="relative">
+            <h1 className="text-4xl font-extrabold bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent drop-shadow-sm">
+              How Locked-in are you?
+            </h1>
+            <div className="absolute -bottom-1 left-0 w-full h-1 bg-gradient-to-r from-primary/30 via-accent/30 to-secondary/30 rounded-full blur-sm"></div>
+            <div className="absolute -bottom-1 left-0 w-3/4 h-0.5 bg-gradient-to-r from-primary via-accent to-transparent rounded-full"></div>
+          </div>
 
           {/* Sort Dropdown */}
           <div className="relative" ref={dropdownRef}>
@@ -87,6 +101,20 @@ const HomePage = () => {
             {showSortDropdown && (
               <div className="absolute right-0 mt-2 w-48 bg-base-100 rounded-lg shadow-lg border border-base-300 z-10">
                 <div className="py-2">
+                  <button
+                    onClick={() => {
+                      setSortBy("latest");
+                      setShowSortDropdown(false);
+                    }}
+                    className={`w-full text-left px-4 py-2 hover:bg-base-200 flex items-center gap-2 ${
+                      sortBy === "latest"
+                        ? "bg-primary text-primary-content"
+                        : ""
+                    }`}
+                  >
+                    <Zap className="w-4 h-4" />
+                    Latest
+                  </button>
                   <button
                     onClick={() => {
                       setSortBy("day");

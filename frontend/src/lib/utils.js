@@ -38,6 +38,15 @@ export const getMonthName = (monthKey) => {
 };
 
 export const groupDaysBySort = (days, sortBy) => {
+  if (sortBy === "latest") {
+    return {
+      all: [...days].sort(
+        (a, b) =>
+          new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date)
+      ),
+    };
+  }
+
   const grouped = {};
 
   days.forEach((day) => {
@@ -68,6 +77,10 @@ export const groupDaysBySort = (days, sortBy) => {
 };
 
 export const getSortedGroupKeys = (grouped, sortBy) => {
+  if (sortBy === "latest") {
+    return ["all"];
+  }
+
   return Object.keys(grouped).sort((a, b) => {
     if (sortBy === "day") {
       return new Date(b) - new Date(a);
@@ -81,6 +94,8 @@ export const getSortedGroupKeys = (grouped, sortBy) => {
 
 export const getGroupTitle = (key, sortBy) => {
   switch (sortBy) {
+    case "latest":
+      return "All Days (Latest First)";
     case "week":
       return `Week ${key.split("-W")[1]}, ${key.split("-W")[0]} (${getWeekRange(
         key
