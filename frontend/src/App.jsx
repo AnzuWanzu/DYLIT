@@ -3,6 +3,7 @@ import LoginForm from "./pages/LoginForm";
 import SignupForm from "./pages/SignupForm";
 import HomePage from "./pages/HomePage";
 import DayDetail from "./pages/DayDetail";
+import CreateDayPage from "./pages/CreateDayPage";
 
 const App = () => {
   return (
@@ -12,6 +13,7 @@ const App = () => {
         <Route path="/signup" element={<SignupForm />} />
         <Route path="/" element={<HomePage />} />
         <Route path="/day/:id" element={<DayDetail />} />
+        <Route path="/create" element={<CreateDayPage />} />
       </Routes>
     </div>
   );
