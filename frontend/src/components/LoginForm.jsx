@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../lib/api";
 import toast from "react-hot-toast";
 
@@ -6,20 +7,26 @@ const LoginForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setErrorMsg("");
     try {
       const res = await api.post("/users/login", { email, password });
       if (res.data.token) {
         localStorage.setItem("token", res.data.token);
         toast.success("Login successful!");
+        navigate("/"); // Redirect to homepage
       } else {
+        setErrorMsg(res.data.message || "Login failed");
         toast.error(res.data.message || "Login failed");
       }
     } catch (error) {
-      toast.error("Login failed");
+      setErrorMsg("Incorrect email or password");
+      toast.error("Incorrect email or password");
     } finally {
       setLoading(false);
     }
@@ -56,7 +63,23 @@ const LoginForm = () => {
             >
               {loading ? "Logging in..." : "Login"}
             </button>
+            {errorMsg && (
+              <div className="text-error text-sm text-center mt-2">
+                {errorMsg}
+              </div>
+            )}
           </form>
+          <div className="mt-4 text-center">
+            <span className="text-sm text-base-content/70">
+              No account yet?{" "}
+            </span>
+            <a
+              href="/signup"
+              className="link link-primary text-sm font-semibold"
+            >
+              Sign up
+            </a>
+          </div>
         </div>
       </div>
     </div>
